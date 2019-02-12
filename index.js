@@ -1,3 +1,5 @@
-const express = require('express');
+const server = require('./server');
 
-const server = express();
+server.listen(5000, () => {
+  console.log('listening to port 5k');
+});
