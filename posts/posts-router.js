@@ -36,14 +36,21 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const postId = req.params.id;
 
-  db.findById(postId)
+  return db
+    .findById(postId)
     .then(post => {
-      res.status(200).json(post);
+      if (post.length === 0) {
+        res
+          .status(404)
+          .json({ message: 'the user with the specified ID does not exist.' });
+      } else {
+        res.status(200).json(post);
+      }
     })
     .catch(() => {
       res
-        .status(404)
-        .json({ message: 'The post with the specified ID does not exist.' });
+        .status(500)
+        .json({ error: 'The post information could not be retrieved.' });
     });
 });
 
@@ -69,18 +76,37 @@ router.delete('/:id', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const postId = req.params.id;
+  const body = req.body;
 
   db.findById(postId)
-    .then(() => {
-      db.update()
-        .then(post => {
-          res.status(200).json(post);
-        })
-        .catch(() => {
-          res.status(500).json({ error: 'The post could not be removed' });
+    .then(post => {
+      console.log(post[0].title);
+      if (!post[0].title || !post[0].contents) {
+        res.status(400).json({
+          errorMessage: 'Please provide title and contents for the post.'
         });
+      } else {
+        db.update(postId, body)
+          .then(() => {
+            db.findById(postId)
+              .then(updatedPost => {
+                res.status(200).json(updatedPost);
+              })
+              .catch(() => {
+                res.status(404).json({
+                  message: 'The post with the specified ID does not exist'
+                });
+              });
+          })
+          .catch(() => {
+            res
+              .status(500)
+              .json({ error: 'The post information could not be modified.' });
+          });
+      }
     })
     .catch(() => {
+      console.log(postId);
       res
         .status(404)
         .json({ message: 'The post with the specified ID does not exist.' });
